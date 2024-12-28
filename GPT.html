@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1e1e1e;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid white;
+            background: radial-gradient(circle, #2b2b2b, #1e1e1e);
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        .controls button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #61dafb;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .controls button:hover {
+            background-color: #21a1f1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div class="controls">
+        <button id="up">Up</button>
+        <button id="left">Left</button>
+        <button id="down">Down</button>
+        <button id="right">Right</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const boxSize = 20;
+        const rows = canvas.height / boxSize;
+        const cols = canvas.width / boxSize;
+
+        let snake = [{ x: 5, y: 5 }];
+        let food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+        let direction = "RIGHT";
+        let gameOver = false;
+
+        document.addEventListener("keydown", changeDirection);
+
+        document.getElementById("up").addEventListener("click", () => setDirection("UP"));
+        document.getElementById("down").addEventListener("click", () => setDirection("DOWN"));
+        document.getElementById("left").addEventListener("click", () => setDirection("LEFT"));
+        document.getElementById("right").addEventListener("click", () => setDirection("RIGHT"));
+
+        function setDirection(newDirection) {
+            if (newDirection === "UP" && direction !== "DOWN") direction = "UP";
+            if (newDirection === "DOWN" && direction !== "UP") direction = "DOWN";
+            if (newDirection === "LEFT" && direction !== "RIGHT") direction = "LEFT";
+            if (newDirection === "RIGHT" && direction !== "LEFT") direction = "RIGHT";
+        }
+
+        function changeDirection(event) {
+            if (event.key === "ArrowUp") setDirection("UP");
+            if (event.key === "ArrowDown") setDirection("DOWN");
+            if (event.key === "ArrowLeft") setDirection("LEFT");
+            if (event.key === "ArrowRight") setDirection("RIGHT");
+        }
+
+        function drawGradientCircle(x, y, radius, color1, color2) {
+            const gradient = ctx.createRadialGradient(
+                x * boxSize + boxSize / 2,
+                y * boxSize + boxSize / 2,
+                radius / 4,
+                x * boxSize + boxSize / 2,
+                y * boxSize + boxSize / 2,
+                radius
+            );
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x * boxSize + boxSize / 2, y * boxSize + boxSize / 2, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawSnake() {
+            for (let i = 0; i < snake.length; i++) {
+                const segment = snake[i];
+                const isHead = i === 0;
+                const color1 = isHead ? "lime" : "#32cd32";
+                const color2 = isHead ? "#aaffaa" : "#228b22";
+                drawGradientCircle(segment.x, segment.y, boxSize / 2.5, color1, color2);
+
+                // Draw eyes on the head
+                if (isHead) {
+                    ctx.fillStyle = "white";
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * boxSize + boxSize / 2 - 4,
+                        segment.y * boxSize + boxSize / 2 - 4,
+                        2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * boxSize + boxSize / 2 + 4,
+                        segment.y * boxSize + boxSize / 2 - 4,
+                        2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawFood() {
+            drawGradientCircle(food.x, food.y, boxSize / 2.5, "red", "darkred");
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            let head = { ...snake[0] };
+
+            if (direction === "UP") head.y -= 1;
+            if (direction === "DOWN") head.y += 1;
+            if (direction === "LEFT") head.x -= 1;
+            if (direction === "RIGHT") head.x += 1;
+
+            // Wrap the snake around the canvas boundaries
+            head.x = (head.x + cols) % cols;
+            head.y = (head.y + rows) % rows;
+
+            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+                gameOver = true;
+                alert("Game Over! Press F5 to restart.");
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                food = { x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows) };
+            } else {
+                snake.pop();
+            }
+
+            draw();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawFood();
+            drawSnake();
+        }
+
+        function gameLoop() {
+            update();
+            if (!gameOver) setTimeout(gameLoop, 100);
+        }
+
+        draw();
+        gameLoop();
+    </script>
+</body>
+</html>
